@@ -1516,7 +1516,10 @@
     <div class="admin-panel__sheet" role="dialog" aria-modal="true" aria-label="Editor">
       <div class="admin-panel__head">
         <h2>Site Editor</h2>
-        <button class="admin-panel__close" type="button" aria-label="Close editor">&times;</button>
+        <div style="display:flex;align-items:center;gap:0.6rem">
+          <button class="admin-panel__publish" type="button" style="font-family:var(--font-mono);font-size:0.78rem;background:var(--color-text);color:var(--color-bg);border:none;border-radius:3px;padding:0.35rem 0.85rem;cursor:pointer" title="Push all changes to GitHub so everyone sees them">&#9654; Publish</button>
+          <button class="admin-panel__close" type="button" aria-label="Close editor">&times;</button>
+        </div>
       </div>
 
       <button class="admin-panel__new-post" type="button">New Post</button>
@@ -1656,10 +1659,42 @@
             </div>
             <button type="submit" class="form-submit">Save About</button>
           </form>
+
+          <h3 style="margin-top:2rem;">Publish Settings</h3>
+          <p style="font-size:0.77rem;color:var(--color-muted);margin-bottom:0.75rem;line-height:1.6">
+            Connect to GitHub so the <strong style="color:var(--color-text)">&#9654; Publish</strong> button at the top saves your changes for <em>everyone</em> to see (not just you). Requires a GitHub Personal Access Token with <code style="font-size:0.85em;background:var(--color-line);padding:0.1em 0.3em;border-radius:2px">repo</code> scope. <a href="https://github.com/settings/tokens/new?scopes=repo&description=YourBestFriend+Admin" target="_blank" rel="noopener" style="color:inherit">Create one here ↗</a>
+          </p>
+          <form class="admin-gh__form">
+            <div class="admin-editor" style="grid-template-columns:1fr 1fr">
+              <div class="form-field">
+                <label>GitHub Token <span style="font-weight:normal;color:var(--color-muted)">(stored only in your browser)</span></label>
+                <input type="password" name="gh-token" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+              </div>
+              <div class="form-field">
+                <label>Repository <span style="font-weight:normal;color:var(--color-muted)">(owner/repo)</span></label>
+                <input type="text" name="gh-repo" placeholder="erickmmorales-byte/your_best_friend">
+              </div>
+              <div class="form-field">
+                <label>Branch</label>
+                <input type="text" name="gh-branch" placeholder="main">
+              </div>
+              <div class="form-field">
+                <label>File path in repo</label>
+                <input type="text" name="gh-path" placeholder="index.html">
+              </div>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem">
+              <button type="submit" class="form-submit">Save GitHub Settings</button>
+              <span class="admin-gh__status" aria-live="polite" style="font-size:0.78rem;color:var(--color-muted)"></span>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Published state — written by the admin Publish button, read on load -->
+  <script id="site-data" type="application/json"></script>
 
   <script>
     (function () {
@@ -1816,15 +1851,24 @@
 
       function loadState() {
         var loaded = null;
+
+        // 1. localStorage: admin's local in-progress edits (highest priority)
         try {
           loaded = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
         } catch (e) { loaded = null; }
+        if (loaded) { normalizeState(loaded); return loaded; }
 
-        if (loaded) {
-          normalizeState(loaded);
-          return loaded;
-        }
+        // 2. Embedded #site-data blob: the last state pushed to GitHub
+        //    This is what all other visitors (and a fresh browser) will see.
+        try {
+          var el = document.getElementById('site-data');
+          if (el && el.textContent.trim()) {
+            loaded = JSON.parse(el.textContent);
+          }
+        } catch (e) { loaded = null; }
+        if (loaded) { normalizeState(loaded); return loaded; }
 
+        // 3. Parse hardcoded HTML as fallback (first-ever load)
         initialState.posts = parsePostsFromDOM();
         var bio = document.querySelector('.about__bio');
         initialState.aboutBioHTML = bio ? bio.innerHTML : '';
@@ -2554,6 +2598,124 @@
 
       renderPosts();
       renderAbout();
+
+      // ── GitHub publish ────────────────────────────────────
+
+      var GH_KEY = 'ybf-gh-cfg';
+
+      function getGhConfig() {
+        try { return JSON.parse(localStorage.getItem(GH_KEY) || '{}'); } catch (e) { return {}; }
+      }
+      function saveGhConfig(c) { localStorage.setItem(GH_KEY, JSON.stringify(c)); }
+
+      // Safe base64 encode for Unicode content
+      function toB64(str) {
+        return btoa(unescape(encodeURIComponent(str)));
+      }
+      function fromB64(str) {
+        return decodeURIComponent(escape(atob(str.replace(/[\r\n]/g, ''))));
+      }
+
+      // Embed the current appState into the HTML string and push to GitHub
+      function publishToGitHub(state) {
+        var cfg = getGhConfig();
+        if (!cfg.token || !cfg.repo || !cfg.branch || !cfg.path) {
+          return Promise.reject('GitHub settings not configured. Open admin → About → Publish Settings.');
+        }
+        var apiBase = 'https://api.github.com/repos/' + cfg.repo + '/contents/' + cfg.path;
+        var headers = {
+          'Authorization': 'token ' + cfg.token,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        };
+
+        // Step 1: fetch current file to get SHA
+        return fetch(apiBase + '?ref=' + cfg.branch, { headers: headers })
+          .then(function (r) {
+            if (!r.ok) throw 'Could not read file from GitHub (status ' + r.status + '). Check repo/branch/path.';
+            return r.json();
+          })
+          .then(function (fileData) {
+            var currentHtml = fromB64(fileData.content);
+            var sha         = fileData.sha;
+
+            // Replace (or insert) the #site-data script tag
+            var stateJson = JSON.stringify(state);
+            var newTag    = '<script id="site-data" type="application/json">' + stateJson + '<\/script>';
+            var tagRe     = /<script[^>]+id="site-data"[^>]*>[\s\S]*?<\/script>/;
+
+            var newHtml = tagRe.test(currentHtml)
+              ? currentHtml.replace(tagRe, newTag)
+              : currentHtml.replace('</body>', newTag + '\n</body>');
+
+            // Step 2: push updated file
+            return fetch(apiBase, {
+              method: 'PUT',
+              headers: headers,
+              body: JSON.stringify({
+                message: 'Publish site content via admin panel',
+                content: toB64(newHtml),
+                sha: sha,
+                branch: cfg.branch
+              })
+            });
+          })
+          .then(function (r) {
+            if (!r.ok) return r.json().then(function (j) { throw j.message || 'Push failed (status ' + r.status + ')'; });
+            return r.json();
+          });
+      }
+
+      // Publish button
+      var publishBtn = adminPanel.querySelector('.admin-panel__publish');
+      publishBtn.addEventListener('click', function () {
+        var cfg = getGhConfig();
+        if (!cfg.token) {
+          setStatus('⚠ No GitHub settings. Go to About → Publish Settings first.');
+          return;
+        }
+        setStatus('Publishing… (this takes a few seconds)');
+        publishBtn.disabled = true;
+        publishToGitHub(appState)
+          .then(function () {
+            // Also sync localStorage so admin's browser matches published state
+            saveState();
+            setStatus('✓ Published! Changes are live (GitHub Pages may take ~1 min to update).');
+          })
+          .catch(function (err) {
+            setStatus('✗ Publish failed: ' + err);
+          })
+          .finally(function () {
+            publishBtn.disabled = false;
+          });
+      });
+
+      // GitHub config form
+      var ghForm       = adminPanel.querySelector('.admin-gh__form');
+      var ghStatus     = adminPanel.querySelector('.admin-gh__status');
+
+      // Populate form on open
+      var _origOpen = openAdminPanel;  // eslint-disable-line
+      openAdminPanel = function () {
+        _origOpen();
+        var cfg = getGhConfig();
+        ghForm.querySelector('[name="gh-token"]').value  = cfg.token  || '';
+        ghForm.querySelector('[name="gh-repo"]').value   = cfg.repo   || '';
+        ghForm.querySelector('[name="gh-branch"]').value = cfg.branch || 'main';
+        ghForm.querySelector('[name="gh-path"]').value   = cfg.path   || 'index.html';
+      };
+
+      ghForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        saveGhConfig({
+          token:  ghForm.querySelector('[name="gh-token"]').value.trim(),
+          repo:   ghForm.querySelector('[name="gh-repo"]').value.trim(),
+          branch: ghForm.querySelector('[name="gh-branch"]').value.trim() || 'main',
+          path:   ghForm.querySelector('[name="gh-path"]').value.trim()   || 'index.html'
+        });
+        ghStatus.textContent = 'Settings saved.';
+        setTimeout(function () { ghStatus.textContent = ''; }, 2500);
+      });
 
     })();
   </script>

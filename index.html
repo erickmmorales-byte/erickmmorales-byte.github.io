@@ -7,6 +7,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <!-- Google Analytics — replace G-XXXXXXXXXX with your Measurement ID -->
+  <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script> -->
+
   <noscript>
     <style>.post__body { max-height: none !important; overflow: visible !important; }</style>
   </noscript>
@@ -730,81 +739,6 @@
       outline-offset: 2px;
     }
 
-    /* ── Conversation / Comments ─────────────────────────── */
-    .conversation {
-      margin-top: 3rem;
-      border-top: 1px solid var(--color-line);
-      padding-top: 1.5rem;
-    }
-
-    .conversation__toggle {
-      background: none;
-      border: none;
-      font-family: var(--font-mono);
-      font-size: 0.78rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--color-muted);
-      cursor: pointer;
-      padding: 0;
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-
-    .conversation__toggle:hover { color: var(--color-text); }
-
-    .conversation__body {
-      display: none;
-      margin-top: 1.5rem;
-    }
-
-    .conversation__body.is-open { display: block; }
-
-    .conversation__form {
-      display: flex;
-      flex-direction: column;
-      gap: 0.85rem;
-      margin-bottom: 2.5rem;
-    }
-
-    .conversation__form-row {
-      display: flex;
-      gap: 0.75rem;
-    }
-
-    .conversation__form-row .form-field { flex: 1; }
-
-    .conversation__empty {
-      font-size: 0.88rem;
-      color: var(--color-muted);
-      font-style: italic;
-      margin-bottom: 0;
-    }
-
-    .conversation__comments {
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-    }
-
-    .conversation__comment {
-      border-left: 2px solid var(--color-line);
-      padding-left: 1rem;
-    }
-
-    .conversation__comment-meta {
-      font-size: 0.72rem;
-      color: var(--color-muted);
-      letter-spacing: 0.06em;
-      margin-bottom: 0.3rem;
-    }
-
-    .conversation__comment-text {
-      font-size: 0.92rem;
-      line-height: 1.65;
-      margin-bottom: 0;
-    }
-
     /* ── Footer ──────────────────────────────────────────── */
     .site-footer {
       text-align: center;
@@ -1056,6 +990,8 @@
       border: 1px solid var(--color-card-border);
       border-radius: 3px;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     .wysiwyg-toolbar {
@@ -1107,6 +1043,8 @@
 
     .wysiwyg-body {
       min-height: 130px;
+      max-height: 220px;
+      overflow-y: auto;
       padding: 0.65rem 0.85rem;
       font-family: var(--font-mono);
       font-size: 0.87rem;
@@ -1114,12 +1052,28 @@
       color: var(--color-text);
       background: var(--color-card-bg);
       outline: none;
+      flex: 1;
     }
 
-    .wysiwyg-body--tall { min-height: 200px; }
+    .wysiwyg-body--tall {
+      min-height: 220px;
+      max-height: 440px;
+    }
 
     .wysiwyg-body:focus-within,
     [contenteditable]:focus { outline: none; box-shadow: inset 0 0 0 1px #bbb; }
+
+    /* Paste-consistency: strip unexpected inline font sizes from spans */
+    .wysiwyg-body span { font-size: inherit; }
+
+    /* execCommand('fontSize') font-tag sizes → consistent em values */
+    .wysiwyg-body font[size="1"],.post__body-inner font[size="1"],.post-modal__body font[size="1"] { font-size: 0.72em; }
+    .wysiwyg-body font[size="2"],.post__body-inner font[size="2"],.post-modal__body font[size="2"] { font-size: 0.85em; }
+    /* size 3 = default, no rule needed */
+    .wysiwyg-body font[size="4"],.post__body-inner font[size="4"],.post-modal__body font[size="4"] { font-size: 1.2em; }
+    .wysiwyg-body font[size="5"],.post__body-inner font[size="5"],.post-modal__body font[size="5"] { font-size: 1.5em; }
+    .wysiwyg-body font[size="6"],.post__body-inner font[size="6"],.post-modal__body font[size="6"] { font-size: 2em; }
+    .wysiwyg-body font[size="7"],.post__body-inner font[size="7"],.post-modal__body font[size="7"] { font-size: 2.5em; }
 
     .wysiwyg-body p { margin-bottom: 0.5rem; }
     .wysiwyg-body p:last-child { margin-bottom: 0; }
@@ -1160,6 +1114,197 @@
 
     .wys-img-dialog__actions { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
 
+    /* ── Preview modal: floats above the admin panel ──────── */
+    .post-modal--preview {
+      z-index: 850;
+    }
+    .post-modal__preview-banner {
+      position: sticky;
+      top: 0;
+      background: #e8a000;
+      color: #fff;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 0.3rem;
+      z-index: 2;
+    }
+
+    /* ── HR in post / WYSIWYG content ───────────────────────── */
+    .wysiwyg-body hr,
+    .post__body-inner hr,
+    .post-modal__body hr {
+      border: none;
+      border-top: 1px solid var(--color-card-border);
+      margin: 1.5rem 0;
+    }
+
+    /* ── PDF admin list ───────────────────────────────────── */
+    .pdf-admin-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-top: 0.25rem;
+    }
+    .pdf-admin-list__item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.82rem;
+      padding: 0.3rem 0.5rem;
+      background: var(--color-bg);
+      border: 1px solid var(--color-card-border);
+      border-radius: 3px;
+    }
+    .pdf-admin-list__name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pdf-admin-list__btn {
+      border: 1px solid var(--color-card-border) !important;
+      background: var(--color-card-bg) !important;
+      color: var(--color-text) !important;
+      border-radius: 2px !important;
+      padding: 0.1rem 0.4rem !important;
+      font-size: 0.8rem !important;
+      cursor: pointer !important;
+      flex-shrink: 0;
+    }
+    .pdf-admin-list__btn--remove {
+      color: #b00020 !important;
+    }
+
+    /* ── PDF attachments section in posts / modal ─────────── */
+    .post__pdf-section {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-card-border);
+    }
+    .post__pdf-section-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    .post__pdf-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .post__pdf-list a {
+      color: var(--color-text);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-size: 0.88rem;
+    }
+    .post__pdf-list a:hover { opacity: 0.7; }
+
+    /* ── List indentation in posts, modal, WYSIWYG ──────────── */
+    .post__body-inner ul,
+    .post-modal__body ul,
+    .wysiwyg-body ul {
+      padding-left: 1.6em;
+      margin: 0.4em 0;
+    }
+    .post__body-inner ol,
+    .post-modal__body ol,
+    .wysiwyg-body ol {
+      padding-left: 2.4em;
+      margin: 0.4em 0;
+    }
+    .post__body-inner li,
+    .post-modal__body li,
+    .wysiwyg-body li {
+      margin: 0.15em 0;
+    }
+
+    /* ── Emoji picker ─────────────────────────────────────────── */
+    .emoji-picker {
+      display: none;
+      position: fixed;
+      z-index: 1200;
+      background: var(--color-card-bg);
+      border: 1px solid var(--color-card-border);
+      border-radius: 4px;
+      padding: 0.5rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      width: 272px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .emoji-picker.is-open { display: block; }
+
+    .emoji-picker__grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 2px;
+    }
+
+    .emoji-btn {
+      font-size: 1.25rem;
+      line-height: 1;
+      padding: 4px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      image-rendering: pixelated;
+    }
+    .emoji-btn:hover {
+      background: var(--color-line);
+      animation: emoji-pop 0.25s steps(3) forwards;
+    }
+    @keyframes emoji-pop {
+      0%   { transform: scale(1)    translateY(0);  }
+      33%  { transform: scale(1.5)  translateY(-4px); }
+      66%  { transform: scale(1.3)  translateY(-2px); }
+      100% { transform: scale(1.4)  translateY(-3px); }
+    }
+
+    /* ── Pagination ───────────────────────────────────────────── */
+    .timeline-pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 2rem 1.5rem 3rem;
+      font-family: var(--font-mono);
+    }
+
+    .page-btn {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      border: 1px solid var(--color-card-border);
+      background: var(--color-card-bg);
+      color: var(--color-text);
+      padding: 0.35rem 0.75rem;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .page-btn:hover { background: var(--color-text); color: var(--color-bg); }
+    .page-btn.is-current {
+      background: var(--color-text);
+      color: var(--color-bg);
+      pointer-events: none;
+    }
+    .page-btn:disabled { opacity: 0.35; cursor: default; }
+
+    /* ── Timeline slide clip ──────────────────────────────────── */
+    .timeline-wrap {
+      overflow: hidden;
+    }
+
     /* About page image */
     .about__photo {
       width: 100%;
@@ -1197,10 +1342,11 @@
   <!-- Posts page -->
   <div id="page-posts" class="page is-active">
     <header class="site-header">
-      <h1 class="site-title">Your Best Friend</h1>
+      <h1 class="site-title" id="main-site-title">Your Best Friend</h1>
       <p class="site-subtitle">Notes on things that matter</p>
     </header>
 
+    <div class="timeline-wrap">
     <main class="timeline">
 
     <!-- Post 1 — left -->
@@ -1375,9 +1521,12 @@
     </article>
 
     </main>
+    </div><!-- /.timeline-wrap -->
+    <nav class="timeline-pagination" aria-label="Post pages"></nav>
 
     <footer class="site-footer">
-      <p>&copy; 2026 &nbsp;&middot;&nbsp; Written slowly, published when ready</p>
+      <p id="site-footer-text">&copy; 2026 &nbsp;&middot;&nbsp; Written slowly, published when ready</p>
+      <p id="site-footer-contact" style="margin-top:0.25rem;font-size:0.8rem"></p>
     </footer>
   </div><!-- /page-posts -->
 
@@ -1490,7 +1639,31 @@
     </div>
   </div>
 
+  <!-- Hyperlink insert dialog -->
+  <div class="wys-img-dialog" id="wys-link-dialog" aria-hidden="true">
+    <div class="wys-img-dialog__box">
+      <p class="wys-img-dialog__title">Insert Hyperlink</p>
+      <div class="form-field">
+        <label>URL</label>
+        <input type="url" id="wld-url" placeholder="https://...">
+      </div>
+      <div class="form-field">
+        <label>Link text <span style="font-weight:normal;color:var(--color-muted)">(leave blank to use selection)</span></label>
+        <input type="text" id="wld-text" placeholder="Optional display text">
+      </div>
+      <div class="wys-img-dialog__actions">
+        <button type="button" class="form-submit" id="wld-insert">Insert</button>
+        <button type="button" class="form-submit" id="wld-cancel" style="background:none;color:var(--color-text);border:1px solid var(--color-card-border)">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Admin login -->
+  <!-- Emoji picker panel -->
+  <div class="emoji-picker" id="emoji-picker" aria-hidden="true">
+    <div class="emoji-picker__grid" id="emoji-grid"></div>
+  </div>
+
   <div class="admin-login-overlay" aria-hidden="true">
     <div class="admin-login-overlay__shade"></div>
     <div class="admin-login" role="dialog" aria-modal="true" aria-label="Admin login">
@@ -1582,24 +1755,44 @@
                         <option value="h2">Heading</option>
                         <option value="h3">Sub-heading</option>
                       </select>
+                      <select class="wysiwyg-select" data-cmd="fontSize" title="Font size">
+                        <option value="2">Small</option>
+                        <option value="3" selected>Normal</option>
+                        <option value="4">Large</option>
+                        <option value="5">X-Large</option>
+                      </select>
                       <span class="wysiwyg-sep"></span>
-                      <button type="button" class="wb" data-cmd="justifyLeft" title="Align left">&#8676;</button>
-                      <button type="button" class="wb" data-cmd="justifyCenter" title="Center">&#8677;</button>
-                      <button type="button" class="wb" data-cmd="justifyRight" title="Align right">&#8678;</button>
+                      <button type="button" class="wb" data-cmd="justifyLeft" title="Align left">&#8592;</button>
+                      <button type="button" class="wb" data-cmd="justifyCenter" title="Align center">&#8596;</button>
+                      <button type="button" class="wb" data-cmd="justifyRight" title="Align right">&#8594;</button>
                       <span class="wysiwyg-sep"></span>
                       <button type="button" class="wb" data-cmd="insertUnorderedList" title="Bullet list">&#8226; List</button>
                       <button type="button" class="wb" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
                       <span class="wysiwyg-sep"></span>
+                      <button type="button" class="wb" id="we-body-insert-link" title="Insert hyperlink">&#128279; Link</button>
+                      <button type="button" class="wb" id="we-body-remove-link" title="Remove hyperlink">Unlink</button>
+                      <button type="button" class="wb" data-cmd="insertHorizontalRule" title="Section break">&#9135; Rule</button>
+                      <span class="wysiwyg-sep"></span>
                       <button type="button" class="wb" id="we-body-insert-img" title="Insert image">&#128444; Image</button>
+                      <button type="button" class="wb" id="we-body-emoji" title="Insert emoji">&#128512;</button>
                     </div>
                     <div class="wysiwyg-body wysiwyg-body--tall" id="we-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Post body"></div>
                   </div>
                 </div>
-                <div class="form-field">
-                  <label><input type="checkbox" name="disable-comments"> Disable conversation for this post</label>
+                <div class="form-field" style="grid-column:span 2">
+                  <label>PDF Attachments <span style="font-weight:normal;color:var(--color-muted)">(links shown at bottom of post)</span></label>
+                  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:0.5rem">
+                    <input type="file" id="pdf-upload-file" accept="application/pdf" style="font-size:0.8rem;flex:0 0 auto">
+                    <span style="color:var(--color-muted);font-size:0.78rem">or URL:</span>
+                    <input type="text" id="pdf-upload-url" placeholder="https://..." style="flex:1;min-width:120px">
+                    <input type="text" id="pdf-upload-name" placeholder="Link label" style="flex:1;min-width:100px">
+                    <button type="button" id="pdf-add-btn" class="form-submit" style="white-space:nowrap">+ Add</button>
+                  </div>
+                  <ul class="pdf-admin-list" id="admin-pdf-list"></ul>
                 </div>
                 <div class="admin-editor__actions">
                   <button type="submit" class="form-submit">Save Post</button>
+                  <button type="button" class="admin-editor__preview form-submit">Preview</button>
                   <button type="button" class="admin-editor__delete">Delete Post</button>
                 </div>
               </form>
@@ -1608,16 +1801,29 @@
         </div>
 
         <div class="admin-pane" data-pane-content="about">
-          <h3>Site options</h3>
-          <div class="form-field">
-            <label><input type="checkbox" name="show-conversation" checked> Keep conversation tab enabled globally</label>
-          </div>
-
-          <h3 style="margin-top:1rem;">About / Header</h3>
+          <h3>About / Header</h3>
           <form class="admin-about__form">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+              <div class="form-field">
+                <label>Site name <span style="font-weight:normal;color:var(--color-muted)">(heading on posts page)</span></label>
+                <input type="text" name="site-name" placeholder="Your Best Friend">
+              </div>
+              <div class="form-field">
+                <label>Browser tab title</label>
+                <input type="text" name="page-title" placeholder="Journal">
+              </div>
+              <div class="form-field">
+                <label>Site subtitle</label>
+                <input type="text" name="site-subtitle">
+              </div>
+              <div class="form-field">
+                <label>Contact email <span style="font-weight:normal;color:var(--color-muted)">(shown in footer)</span></label>
+                <input type="email" name="contact-email" placeholder="hello@example.com">
+              </div>
+            </div>
             <div class="form-field">
-              <label>Site subtitle</label>
-              <input type="text" name="site-subtitle">
+              <label>Footer note</label>
+              <input type="text" name="footer-text" placeholder="Written slowly, published when ready">
             </div>
             <div class="form-field">
               <label>About photo <span style="font-weight:normal;color:var(--color-muted)">(optional)</span></label>
@@ -1782,13 +1988,14 @@
       var openArticleId  = null;
       var lastTouchTime  = 0;
 
-      var commentsStore = {};
-
       var initialState = {
         posts: [],
-        showConversation: true,
         aboutBioHTML: '',
+        siteName: '',
         siteSubtitle: '',
+        pageTitle: '',
+        contactEmail: '',
+        footerText: '',
         aboutImage: '',
         aboutImageWidth: 'normal',
         aboutImagePosition: 'before'
@@ -1821,7 +2028,6 @@
             title: title ? title.textContent : '',
             excerptHTML: excerpt ? excerpt.innerHTML : '',
             bodyHTML: bodyInner ? bodyInner.innerHTML : '',
-            noComments: article.hasAttribute('data-no-comments')
           });
         });
         return posts;
@@ -1838,12 +2044,16 @@
             title: p.title || 'Untitled',
             excerptHTML: p.excerptHTML || '',
             bodyHTML: p.bodyHTML || '',
-            noComments: !!p.noComments
+            pdfs: Array.isArray(p.pdfs) ? p.pdfs : [],
           };
         });
-        if (typeof state.showConversation !== 'boolean') state.showConversation = true;
+
         if (typeof state.aboutBioHTML !== 'string') state.aboutBioHTML = '';
+        if (typeof state.siteName !== 'string') state.siteName = '';
         if (typeof state.siteSubtitle !== 'string') state.siteSubtitle = '';
+        if (typeof state.pageTitle !== 'string') state.pageTitle = '';
+        if (typeof state.contactEmail !== 'string') state.contactEmail = '';
+        if (typeof state.footerText !== 'string') state.footerText = '';
         if (typeof state.aboutImage !== 'string') state.aboutImage = '';
         if (state.aboutImageWidth !== 'full') state.aboutImageWidth = 'normal';
         if (state.aboutImagePosition !== 'after') state.aboutImagePosition = 'before';
@@ -1884,15 +2094,35 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
       }
 
-      function renderPosts() {
+      function renderPostsForCurrentPage() {
         timeline.querySelectorAll('.post').forEach(function (el) { el.remove(); });
+        var start = currentPage * POSTS_PER_PAGE;
+        var pagePosts = appState.posts.slice(start, start + POSTS_PER_PAGE);
+        pagePosts.forEach(buildPostElement);
+        renderPagination();
+      }
 
-        appState.posts.forEach(function (post) {
+      function renderPosts() {
+        // Reset to page 0 when re-rendering (e.g. after admin save/delete)
+        currentPage = 0;
+        renderPostsForCurrentPage();
+      }
+
+      function buildPostElement(post) {
           var article = document.createElement('article');
           article.className = 'post post--' + post.side;
           article.setAttribute('aria-expanded', 'false');
           article.setAttribute('data-post-id', post.id);
-          if (post.noComments) article.setAttribute('data-no-comments', '');
+          var pdfSection = '';
+          if (post.pdfs && post.pdfs.length > 0) {
+            pdfSection = '<div class="post__pdf-section">'
+              + '<p class="post__pdf-section-label">Attachments</p>'
+              + '<ul class="post__pdf-list">'
+              + post.pdfs.map(function (pdf) {
+                  return '<li><a href="' + escapeAttr(pdf.url) + '" target="_blank" rel="noopener">&#128196; ' + escapeHtml(pdf.name) + '</a></li>';
+                }).join('')
+              + '</ul></div>';
+          }
 
           article.innerHTML =
             '<div class="post__connector"></div>'
@@ -1902,19 +2132,41 @@
             +     '<h2 class="post__title">' + escapeHtml(post.title) + '</h2>'
             +   '</header>'
             +   '<p class="post__excerpt">' + post.excerptHTML + '</p>'
-            +   '<div class="post__body" aria-hidden="true"><div class="post__body-inner">' + post.bodyHTML + '</div></div>'
+            +   '<div class="post__body" aria-hidden="true"><div class="post__body-inner">' + post.bodyHTML + '</div>' + pdfSection + '</div>'
             +   '<button class="post__toggle" aria-label="Read more about ' + escapeHtml(post.title) + '">Read more</button>'
             + '</div>';
 
           timeline.appendChild(article);
-        });
       }
 
       function renderAbout() {
         var aboutBio = document.querySelector('.about__bio');
         if (aboutBio) aboutBio.innerHTML = appState.aboutBioHTML;
+
+        // Site name (main header h1)
+        var mainTitle = document.getElementById('main-site-title');
+        if (mainTitle && appState.siteName) mainTitle.textContent = appState.siteName;
+
+        // Subtitle
         var subtitle = document.querySelector('.site-subtitle');
         if (subtitle) subtitle.textContent = appState.siteSubtitle;
+
+        // Browser tab title
+        if (appState.pageTitle) document.title = appState.pageTitle;
+
+        // Footer note
+        var footerText = document.getElementById('site-footer-text');
+        if (footerText && appState.footerText) {
+          footerText.innerHTML = '&copy; ' + new Date().getFullYear() + ' &nbsp;&middot;&nbsp; ' + escapeHtml(appState.footerText);
+        }
+
+        // Contact email
+        var footerContact = document.getElementById('site-footer-contact');
+        if (footerContact) {
+          footerContact.innerHTML = appState.contactEmail
+            ? '<a href="mailto:' + escapeAttr(appState.contactEmail) + '" style="color:var(--color-muted);text-decoration:underline">' + escapeHtml(appState.contactEmail) + '</a>'
+            : '';
+        }
 
         var aboutPhoto = document.getElementById('about-photo');
         if (aboutPhoto) {
@@ -1944,72 +2196,23 @@
         }
       }
 
-      function renderComments(container, comments) {
-        if (!comments.length) {
-          container.innerHTML = '<p class="conversation__empty">No comments yet. Be the first.</p>';
-          return;
-        }
-        container.innerHTML = comments.map(function (c) {
-          return '<div class="conversation__comment">'
-            + '<p class="conversation__comment-meta">' + escapeHtml(c.username) + ' &middot; ' + c.date + '</p>'
-            + '<p class="conversation__comment-text">' + escapeHtml(c.message) + '</p>'
-            + '</div>';
-        }).join('');
+      function buildPdfSectionHtml(pdfs) {
+        if (!pdfs || !pdfs.length) return '';
+        return '<div class="post__pdf-section">'
+          + '<p class="post__pdf-section-label">Attachments</p>'
+          + '<ul class="post__pdf-list">'
+          + pdfs.map(function (pdf) {
+              return '<li><a href="' + escapeAttr(pdf.url) + '" target="_blank" rel="noopener">&#128196; ' + escapeHtml(pdf.name) + '</a></li>';
+            }).join('')
+          + '</ul></div>';
       }
 
-      function buildConversation(article) {
-        if (!appState.showConversation || article.hasAttribute('data-no-comments')) return;
-
-        var articleId = getArticleId(article);
-        if (!commentsStore[articleId]) commentsStore[articleId] = [];
-
-        var section = document.createElement('div');
-        section.className = 'conversation';
-        section.innerHTML =
-          '<button class="conversation__toggle" aria-expanded="false">Conversation</button>'
-          + '<div class="conversation__body">'
-          +   '<form class="conversation__form">'
-          +     '<div class="conversation__form-row">'
-          +       '<div class="form-field"><label>Username</label>'
-          +         '<input type="text" name="conv-username" placeholder="Your name" required></div>'
-          +       '<div class="form-field"><label>Email</label>'
-          +         '<input type="email" name="conv-email" placeholder="your@email.com" required></div>'
-          +     '</div>'
-          +     '<div class="form-field"><label>Message</label>'
-          +       '<textarea name="conv-message" placeholder="Join the conversation..." required></textarea></div>'
-          +     '<button type="submit" class="form-submit">Post</button>'
-          +   '</form>'
-          +   '<div class="conversation__comments"></div>'
-          + '</div>';
-
-        modalScroll.appendChild(section);
-
-        var toggle   = section.querySelector('.conversation__toggle');
-        var body     = section.querySelector('.conversation__body');
-        var comments = section.querySelector('.conversation__comments');
-
-        renderComments(comments, commentsStore[articleId]);
-
-        toggle.addEventListener('click', function () {
-          var open = body.classList.toggle('is-open');
-          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-
-        section.querySelector('.conversation__form').addEventListener('submit', function (e) {
-          e.preventDefault();
-          var username = this.querySelector('[name="conv-username"]').value.trim();
-          var message  = this.querySelector('[name="conv-message"]').value.trim();
-          commentsStore[articleId].push({
-            username: username,
-            message:  message,
-            date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-          });
-          renderComments(comments, commentsStore[articleId]);
-          this.reset();
-        });
+      function clearPreviewBanner() {
+        modalScroll.querySelectorAll('.post-modal__preview-banner').forEach(function (b) { b.remove(); });
       }
 
       function populateModal(article) {
+        clearPreviewBanner();
         var date      = article.querySelector('.post__date');
         var title     = article.querySelector('.post__title');
         var excerpt   = article.querySelector('.post__excerpt');
@@ -2026,10 +2229,24 @@
         // elements and keep data-caption purely as a data attribute for lightbox
         modalBody.querySelectorAll('figcaption').forEach(function (fc) { fc.remove(); });
 
-        var prev = modalScroll.querySelector('.conversation');
-        if (prev) prev.remove();
+        // Show PDF attachments from post state
+        var postId = article.getAttribute('data-post-id');
+        var post = postId ? findPostById(postId) : null;
+        if (post && post.pdfs && post.pdfs.length) {
+          modalBody.insertAdjacentHTML('beforeend', buildPdfSectionHtml(post.pdfs));
+        }
+      }
 
-        buildConversation(article);
+      function populateModalFromPost(post) {
+        modalDate.textContent = post.dateText || '';
+        modalDate.setAttribute('datetime', post.datetime || '');
+        modalTitle.textContent = post.title || 'Untitled';
+        modalBody.innerHTML = (post.excerptHTML ? '<p>' + post.excerptHTML + '</p>' : '')
+                            + (post.bodyHTML || '');
+        modalBody.querySelectorAll('figcaption').forEach(function (fc) { fc.remove(); });
+        if (post.pdfs && post.pdfs.length) {
+          modalBody.insertAdjacentHTML('beforeend', buildPdfSectionHtml(post.pdfs));
+        }
       }
 
       function growModal(fromRect, toMargin) {
@@ -2068,8 +2285,10 @@
       }
 
       function closeModal() {
+        var isPreview = modal.classList.contains('post-modal--preview');
+        clearPreviewBanner();
         modalContainer.style.overflowY = 'hidden';
-        if (lastCardRect) {
+        if (lastCardRect && !isPreview) {
           var r = lastCardRect;
           modalContainer.style.transition =
             'top 0.35s ' + EASING + ', left 0.35s ' + EASING +
@@ -2079,7 +2298,7 @@
           modalContainer.style.right  = (window.innerWidth  - r.right)  + 'px';
           modalContainer.style.bottom = (window.innerHeight - r.bottom) + 'px';
         }
-        modal.classList.remove('is-open');
+        modal.classList.remove('is-open', 'post-modal--preview');
         modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
         modal.addEventListener('transitionend', function handler(e) {
@@ -2224,7 +2443,6 @@
       var postsList = adminPanel.querySelector('.admin-posts-list');
       var editorForm = adminPanel.querySelector('.admin-editor__form');
       var aboutForm = adminPanel.querySelector('.admin-about__form');
-      var convToggleInput = adminPanel.querySelector('[name="show-conversation"]');
       var newPostBtn = adminPanel.querySelector('.admin-panel__new-post');
       var statusBox = adminPanel.querySelector('.admin-panel__status');
       var tabButtons = adminPanel.querySelectorAll('.admin-tab');
@@ -2259,8 +2477,11 @@
         adminPanel.setAttribute('aria-hidden', 'false');
         setActiveAdminPane('posts');
         renderAdminPostsList();
-        convToggleInput.checked = appState.showConversation;
-        aboutForm.querySelector('[name="site-subtitle"]').value = appState.siteSubtitle;
+        aboutForm.querySelector('[name="site-name"]').value      = appState.siteName      || '';
+        aboutForm.querySelector('[name="site-subtitle"]').value  = appState.siteSubtitle  || '';
+        aboutForm.querySelector('[name="page-title"]').value     = appState.pageTitle     || '';
+        aboutForm.querySelector('[name="contact-email"]').value  = appState.contactEmail  || '';
+        aboutForm.querySelector('[name="footer-text"]').value    = appState.footerText    || '';
         aboutForm.querySelector('[name="about-img-url"]').value        = appState.aboutImage        || '';
         aboutForm.querySelector('[name="about-img-width"]').value     = appState.aboutImageWidth    || 'normal';
         aboutForm.querySelector('[name="about-img-position"]').value  = appState.aboutImagePosition || 'before';
@@ -2289,6 +2510,22 @@
         });
       }
 
+      // Silently persist whatever is currently in the editor back to appState
+      function autosaveEditor() {
+        var id = editorForm.querySelector('[name="post-id"]').value;
+        if (!id) return;
+        var existing = findPostById(id);
+        if (!existing) return;
+        existing.title       = editorForm.querySelector('[name="title"]').value.trim() || existing.title;
+        existing.dateText    = editorForm.querySelector('[name="date-text"]').value.trim();
+        existing.datetime    = editorForm.querySelector('[name="date-iso"]').value.trim();
+        existing.side        = editorForm.querySelector('[name="side"]').value === 'right' ? 'right' : 'left';
+        existing.excerptHTML = weExcerpt.innerHTML;
+        existing.bodyHTML    = weBody.innerHTML;
+        existing.pdfs        = currentEditorPdfs.slice();
+        saveState();
+      }
+
       function renderAdminPostsList() {
         postsList.innerHTML = '';
         appState.posts.forEach(function (post, idx) {
@@ -2297,6 +2534,7 @@
           btn.className = 'admin-posts-list__item' + (post.id === selectedPostId ? ' is-active' : '');
           btn.textContent = post.dateText + ' — ' + post.title;
           btn.addEventListener('click', function () {
+            autosaveEditor();            // preserve any unsaved changes first
             selectedPostId = post.id;
             loadPostIntoEditor(post);
             renderAdminPostsList();
@@ -2311,58 +2549,16 @@
         editorForm.querySelector('[name="date-text"]').value = post.dateText;
         editorForm.querySelector('[name="date-iso"]').value = post.datetime;
         editorForm.querySelector('[name="side"]').value = post.side;
-        editorForm.querySelector('[name="disable-comments"]').checked = !!post.noComments;
         // Load into WYSIWYG editors directly as HTML
         weExcerpt.innerHTML = post.excerptHTML || '';
         weBody.innerHTML    = post.bodyHTML    || '';
+        // Load PDFs
+        currentEditorPdfs = (post.pdfs || []).map(function (p) { return Object.assign({}, p); });
+        renderAdminPdfList();
       }
 
       function findPostById(id) {
         return appState.posts.find(function (p) { return p.id === id; });
-      }
-
-      function escapeAttr(str) {
-        return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      }
-
-      function formatInline(text) {
-        return escapeHtml(text)
-          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*(.+?)\*/g, '<em>$1</em>');
-      }
-
-      function makeParagraphHtml(raw) {
-        var text = (raw || '').replace(/\r\n/g, '\n');
-        var imageToken = /\[image\s+src="([^"]+)"(?:\s+caption="([^"]*)")?(?:\s+align="(left|right|full)")?\s*\]/g;
-        var parts = [];
-        var last = 0;
-        var match;
-        while ((match = imageToken.exec(text)) !== null) {
-          if (match.index > last) parts.push({ type: 'text', value: text.slice(last, match.index) });
-          parts.push({
-            type: 'image',
-            src: match[1],
-            caption: match[2] || '',
-            align: match[3] || 'full'
-          });
-          last = imageToken.lastIndex;
-        }
-        if (last < text.length) parts.push({ type: 'text', value: text.slice(last) });
-
-        return parts.map(function (part) {
-          if (part.type === 'image') {
-            var cls = part.align === 'left' ? ' post-img--left' : part.align === 'right' ? ' post-img--right' : '';
-            return '<figure class="post-img' + cls + '" data-caption="' + escapeAttr(part.caption) + '">'
-              + '<img src="' + escapeAttr(part.src) + '" alt="' + escapeAttr(part.caption || 'Post image') + '">'
-              + '</figure>';
-          }
-
-          return part.value.split(/\n{2,}/).map(function (chunk) {
-            return chunk.trim();
-          }).filter(Boolean).map(function (chunk) {
-            return '<p>' + formatInline(chunk).replace(/\n/g, '<br>') + '</p>';
-          }).join('');
-        }).join('');
       }
 
       // insertAtCursor no longer needed (WYSIWYG uses execCommand)
@@ -2379,7 +2575,7 @@
           side: editorForm.querySelector('[name="side"]').value === 'right' ? 'right' : 'left',
           excerptHTML: weExcerpt.innerHTML,
           bodyHTML:    weBody.innerHTML,
-          noComments: editorForm.querySelector('[name="disable-comments"]').checked
+          pdfs: currentEditorPdfs.slice(),
         };
 
         if (existing) {
@@ -2402,6 +2598,8 @@
         appState.posts = appState.posts.filter(function (p) { return p.id !== id; });
         selectedPostId = null;
         editorForm.reset();
+        currentEditorPdfs = [];
+        renderAdminPdfList();
         renderPosts();
         saveState();
         renderAdminPostsList();
@@ -2415,6 +2613,8 @@
         editorForm.querySelector('[name="side"]').value = 'left';
         weExcerpt.innerHTML = '';
         weBody.innerHTML    = '';
+        currentEditorPdfs = [];
+        renderAdminPdfList();
         renderAdminPostsList();
         setActiveAdminPane('posts');
         setStatus('Ready for a new post.');
@@ -2443,7 +2643,7 @@
         var cmd = sel.getAttribute('data-cmd');
         if (!cmd) return;
         document.execCommand(cmd, false, sel.value);
-        sel.value = 'p'; // reset select after applying
+        if (cmd === 'formatBlock') sel.value = 'p'; // reset heading select only
       });
 
       // ── WYSIWYG image insert dialog ──────────────────────────
@@ -2467,6 +2667,10 @@
       }
 
       document.getElementById('we-body-insert-img').addEventListener('click', openImgDialog);
+
+      document.getElementById('we-body-remove-link').addEventListener('click', function () {
+        document.execCommand('unlink', false, null);
+      });
 
       document.getElementById('wyd-file').addEventListener('change', function () {
         var file = this.files[0];
@@ -2503,6 +2707,272 @@
         setStatus('Image inserted.');
       });
 
+      // ── WYSIWYG hyperlink dialog ─────────────────────────────
+
+      var wysLinkDialog = document.getElementById('wys-link-dialog');
+
+      function openLinkDialog() {
+        var sel = window.getSelection();
+        savedRange = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0).cloneRange() : null;
+        document.getElementById('wld-url').value  = '';
+        document.getElementById('wld-text').value = '';
+        wysLinkDialog.classList.add('is-open');
+        wysLinkDialog.setAttribute('aria-hidden', 'false');
+        document.getElementById('wld-url').focus();
+      }
+
+      function closeLinkDialog() {
+        wysLinkDialog.classList.remove('is-open');
+        wysLinkDialog.setAttribute('aria-hidden', 'true');
+      }
+
+      document.getElementById('we-body-insert-link').addEventListener('click', openLinkDialog);
+      document.getElementById('wld-cancel').addEventListener('click', closeLinkDialog);
+
+      document.getElementById('wld-insert').addEventListener('click', function () {
+        var url  = document.getElementById('wld-url').value.trim();
+        var text = document.getElementById('wld-text').value.trim();
+        if (!url) { closeLinkDialog(); return; }
+
+        weBody.focus();
+        if (savedRange) {
+          var lsel = window.getSelection();
+          lsel.removeAllRanges();
+          lsel.addRange(savedRange);
+        }
+
+        // Use provided text, or fall back to selected text, or the URL itself
+        var selText = (savedRange && !savedRange.collapsed) ? savedRange.toString() : '';
+        var linkText = text || selText || url;
+        var linkHtml = '<a href="' + url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener">' + escapeHtml(linkText) + '</a>';
+        document.execCommand('insertHTML', false, linkHtml);
+        closeLinkDialog();
+        setStatus('Link inserted.');
+      });
+
+      // ── Admin PDF management ─────────────────────────────────
+
+      var currentEditorPdfs = [];
+
+      function renderAdminPdfList() {
+        var list = document.getElementById('admin-pdf-list');
+        list.innerHTML = '';
+        currentEditorPdfs.forEach(function (pdf, idx) {
+          var li = document.createElement('li');
+          li.className = 'pdf-admin-list__item';
+          li.innerHTML =
+            '<span class="pdf-admin-list__name">&#128196; ' + escapeHtml(pdf.name) + '</span>'
+            + '<div style="display:flex;gap:0.25rem;align-items:center">'
+            + '<a href="' + escapeAttr(pdf.url) + '" target="_blank" rel="noopener" class="pdf-admin-list__btn" style="text-decoration:none">&#128065; View</a>'
+            + (idx > 0 ? '<button type="button" class="pdf-admin-list__btn" data-pdf-action="up" data-pdf-id="' + pdf.id + '">&uarr;</button>' : '')
+            + (idx < currentEditorPdfs.length - 1 ? '<button type="button" class="pdf-admin-list__btn" data-pdf-action="down" data-pdf-id="' + pdf.id + '">&darr;</button>' : '')
+            + '<button type="button" class="pdf-admin-list__btn pdf-admin-list__btn--remove" data-pdf-action="remove" data-pdf-id="' + pdf.id + '">&times; Remove</button>'
+            + '</div>';
+          list.appendChild(li);
+        });
+      }
+
+      document.getElementById('admin-pdf-list').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-pdf-action]');
+        if (!btn) return;
+        var action = btn.getAttribute('data-pdf-action');
+        var id     = btn.getAttribute('data-pdf-id');
+        var idx    = currentEditorPdfs.findIndex(function (p) { return p.id === id; });
+        if (idx === -1) return;
+        if (action === 'remove') {
+          currentEditorPdfs.splice(idx, 1);
+        } else if (action === 'up' && idx > 0) {
+          var tmp = currentEditorPdfs[idx - 1];
+          currentEditorPdfs[idx - 1] = currentEditorPdfs[idx];
+          currentEditorPdfs[idx] = tmp;
+        } else if (action === 'down' && idx < currentEditorPdfs.length - 1) {
+          var tmp2 = currentEditorPdfs[idx + 1];
+          currentEditorPdfs[idx + 1] = currentEditorPdfs[idx];
+          currentEditorPdfs[idx] = tmp2;
+        }
+        renderAdminPdfList();
+      });
+
+      document.getElementById('pdf-add-btn').addEventListener('click', function () {
+        var fileInput = document.getElementById('pdf-upload-file');
+        var url  = document.getElementById('pdf-upload-url').value.trim();
+        var name = document.getElementById('pdf-upload-name').value.trim() || 'Download PDF';
+        var file = fileInput.files[0];
+
+        function addPdf(pdfUrl) {
+          currentEditorPdfs.push({ id: uid(), name: name, url: pdfUrl });
+          renderAdminPdfList();
+          fileInput.value = '';
+          document.getElementById('pdf-upload-url').value  = '';
+          document.getElementById('pdf-upload-name').value = '';
+        }
+
+        if (file) {
+          var reader = new FileReader();
+          reader.onload = function (ev) { addPdf(ev.target.result); };
+          reader.readAsDataURL(file);
+        } else if (url) {
+          addPdf(url);
+        }
+      });
+
+      // ── Preview post from admin editor ───────────────────────
+
+      adminPanel.querySelector('.admin-editor__preview').addEventListener('click', function () {
+        var previewPost = {
+          dateText:    editorForm.querySelector('[name="date-text"]').value.trim(),
+          datetime:    editorForm.querySelector('[name="date-iso"]').value.trim(),
+          title:       editorForm.querySelector('[name="title"]').value.trim() || 'Untitled',
+          excerptHTML: weExcerpt.innerHTML,
+          bodyHTML:    weBody.innerHTML,
+          pdfs:        currentEditorPdfs,
+        };
+        modal.classList.add('post-modal--preview');
+        populateModalFromPost(previewPost);
+        // Insert a preview banner at the top of the scroll area
+        var banner = document.createElement('div');
+        banner.className = 'post-modal__preview-banner';
+        banner.textContent = 'Preview — not yet published';
+        modalScroll.insertBefore(banner, modalScroll.firstChild);
+        // Show modal using full-window position (no grow animation)
+        var margin = window.innerWidth <= 700 ? '0.75rem' : '2rem';
+        modalContainer.style.cssText = '';
+        modalContainer.style.top    = margin;
+        modalContainer.style.left   = margin;
+        modalContainer.style.right  = margin;
+        modalContainer.style.bottom = margin;
+        modalContainer.style.overflowY = 'auto';
+        lastCardRect = null;
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+      });
+
+      // ── Emoji picker ─────────────────────────────────────────
+
+      var EMOJIS = [
+        '😀','😃','😄','😁','😆','😂','🤣','😊','☺️','😍','🥰','😘',
+        '😋','😜','🤪','😝','🤑','😎','🤓','🧐','🥸','😏','😒','😞',
+        '😔','😟','😕','☹️','😢','😭','😤','😠','😡','🤬','😳','🥺',
+        '😱','😨','🤗','🤔','🤭','🤫','🤥','😴','🤤','🤢','🤧','🥳',
+        '🥵','🥶','😈','👿','💀','☠️','👻','👽','👾','🤖','🎃','💫',
+        '👋','✋','🖐️','🤙','👌','✌️','🤞','🤟','👍','👎','✊','👏',
+        '🙌','🤝','🙏','💪','🦾','🖕','☝️','👇','👈','👉','👆','💅',
+        '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','💕','💞',
+        '💓','💗','💖','💘','💝','✨','🔥','⚡','💥','🌟','⭐','🌈',
+        '☀️','🌙','❄️','💧','🌊','🍕','🍔','🍟','🌮','🌯','🍜','🍣',
+        '🍰','🎂','🎁','🎉','🎊','🎈','🎮','🎯','🎲','🏆','🥇','🎵',
+        '🎶','🎸','🎹','🎤','🌺','🌸','🌻','🌹','🌴','🌵','🐶','🐱',
+        '🐭','🐸','🐻','🦊','🦁','🐯','🐨','🦄','🐙','🦋','🌍','🚀',
+        '✅','❌','⚠️','💯','📌','💡','📚','📝','🔑','💻','📱','🎥',
+      ];
+
+      var emojiPicker    = document.getElementById('emoji-picker');
+      var emojiGrid      = document.getElementById('emoji-grid');
+      var emojiSavedRange = null;
+
+      // Build grid once
+      EMOJIS.forEach(function (em) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'emoji-btn';
+        btn.textContent = em;
+        btn.setAttribute('title', em);
+        btn.addEventListener('click', function () {
+          weBody.focus();
+          if (emojiSavedRange) {
+            var esel = window.getSelection();
+            esel.removeAllRanges();
+            esel.addRange(emojiSavedRange);
+          }
+          document.execCommand('insertText', false, em);
+          closeEmojiPicker();
+        });
+        emojiGrid.appendChild(btn);
+      });
+
+      function closeEmojiPicker() {
+        emojiPicker.classList.remove('is-open');
+        emojiPicker.setAttribute('aria-hidden', 'true');
+      }
+
+      document.getElementById('we-body-emoji').addEventListener('click', function (e) {
+        e.stopPropagation();
+        var sel = window.getSelection();
+        emojiSavedRange = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0).cloneRange() : null;
+        // Position picker near the button
+        var rect = e.currentTarget.getBoundingClientRect();
+        emojiPicker.style.left = Math.min(rect.left, window.innerWidth - 284) + 'px';
+        emojiPicker.style.top  = (rect.bottom + 6) + 'px';
+        var isOpen = emojiPicker.classList.contains('is-open');
+        if (isOpen) {
+          closeEmojiPicker();
+        } else {
+          emojiPicker.classList.add('is-open');
+          emojiPicker.setAttribute('aria-hidden', 'false');
+        }
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!emojiPicker.contains(e.target)) closeEmojiPicker();
+      });
+
+      // Close emoji picker on Escape
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && emojiPicker.classList.contains('is-open')) closeEmojiPicker();
+      }, true);
+
+      // ── Pagination ────────────────────────────────────────────
+
+      var POSTS_PER_PAGE = 20;
+      var currentPage    = 0;
+      var paginationNav  = document.querySelector('.timeline-pagination');
+
+      function totalPages() {
+        return Math.max(1, Math.ceil(appState.posts.length / POSTS_PER_PAGE));
+      }
+
+      function renderPagination() {
+        paginationNav.innerHTML = '';
+        var total = totalPages();
+        if (total <= 1) return;
+
+        function makeBtn(label, page, isCurrent) {
+          var btn = document.createElement('button');
+          btn.className = 'page-btn' + (isCurrent ? ' is-current' : '');
+          btn.textContent = label;
+          if (!isCurrent) btn.addEventListener('click', function () { goToPage(page); });
+          return btn;
+        }
+
+        if (currentPage > 0) paginationNav.appendChild(makeBtn('← Prev', currentPage - 1, false));
+        for (var i = 0; i < total; i++) {
+          paginationNav.appendChild(makeBtn(i + 1, i, i === currentPage));
+        }
+        if (currentPage < total - 1) paginationNav.appendChild(makeBtn('Next →', currentPage + 1, false));
+      }
+
+      function goToPage(page) {
+        var direction = page > currentPage ? 1 : -1;
+        var tl = document.querySelector('.timeline');
+
+        tl.style.transition = 'transform 0.38s cubic-bezier(0.4,0,0.2,1)';
+        tl.style.transform  = 'translateX(' + (direction > 0 ? '-110%' : '110%') + ')';
+
+        setTimeout(function () {
+          currentPage = page;
+          tl.style.transition = 'none';
+          tl.style.transform  = 'translateX(' + (direction > 0 ? '110%' : '-110%') + ')';
+          renderPostsForCurrentPage();
+          renderPagination();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          // Force reflow then slide in
+          tl.offsetHeight;
+          tl.style.transition = 'transform 0.38s cubic-bezier(0.4,0,0.2,1)';
+          tl.style.transform  = 'translateX(0)';
+        }, 390);
+      }
+
       // ── About page image preview live update ─────────────────
 
       aboutForm.querySelector('[name="about-img-url"]').addEventListener('input', function () {
@@ -2525,15 +2995,13 @@
         reader.readAsDataURL(file);
       });
 
-      convToggleInput.addEventListener('change', function () {
-        appState.showConversation = convToggleInput.checked;
-        saveState();
-        setStatus(convToggleInput.checked ? 'Conversation enabled.' : 'Conversation hidden.');
-      });
-
       aboutForm.addEventListener('submit', function (e) {
         e.preventDefault();
+        appState.siteName     = aboutForm.querySelector('[name="site-name"]').value.trim();
         appState.siteSubtitle = aboutForm.querySelector('[name="site-subtitle"]').value.trim();
+        appState.pageTitle    = aboutForm.querySelector('[name="page-title"]').value.trim();
+        appState.contactEmail = aboutForm.querySelector('[name="contact-email"]').value.trim();
+        appState.footerText   = aboutForm.querySelector('[name="footer-text"]').value.trim();
         appState.aboutBioHTML = weAboutBio.innerHTML;
         appState.aboutImage         = aboutForm.querySelector('[name="about-img-url"]').value.trim();
         appState.aboutImageWidth    = aboutForm.querySelector('[name="about-img-width"]').value;
@@ -2589,6 +3057,7 @@
           typedBuffer = (typedBuffer + e.key).slice(-ADMIN_TRIGGER_CODE.length);
           if (typedBuffer === ADMIN_TRIGGER_CODE) {
             typedBuffer = '';
+            e.preventDefault();
             showLogin();
           }
         } else {
@@ -2596,7 +3065,7 @@
         }
       });
 
-      renderPosts();
+      renderPosts(); // also calls renderPagination via renderPostsForCurrentPage
       renderAbout();
 
       // ── GitHub publish ────────────────────────────────────
@@ -2647,6 +3116,11 @@
             var newHtml = tagRe.test(currentHtml)
               ? currentHtml.replace(tagRe, newTag)
               : currentHtml.replace('</body>', newTag + '\n</body>');
+
+            // Also patch <title> tag if a custom page title is set
+            if (state.pageTitle) {
+              newHtml = newHtml.replace(/<title>[^<]*<\/title>/, '<title>' + state.pageTitle.replace(/</g, '&lt;') + '</title>');
+            }
 
             // Step 2: push updated file
             return fetch(apiBase, {

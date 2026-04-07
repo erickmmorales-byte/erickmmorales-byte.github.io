@@ -2252,8 +2252,7 @@
         modalDate.setAttribute('datetime', date ? date.getAttribute('datetime') : '');
         modalTitle.textContent = title ? title.textContent : '';
 
-        modalBody.innerHTML = (excerpt ? '<p>' + excerpt.innerHTML + '</p>' : '')
-                            + (bodyInner ? bodyInner.innerHTML : '');
+        modalBody.innerHTML = (bodyInner ? bodyInner.innerHTML : '');
 
         // Captions live only in the lightbox — strip any visible figcaption
         // elements and keep data-caption purely as a data attribute for lightbox
@@ -2271,8 +2270,7 @@
         modalDate.textContent = post.dateText || '';
         modalDate.setAttribute('datetime', post.datetime || '');
         modalTitle.textContent = post.title || 'Untitled';
-        modalBody.innerHTML = (post.excerptHTML ? '<p>' + post.excerptHTML + '</p>' : '')
-                            + (post.bodyHTML || '');
+        modalBody.innerHTML = post.bodyHTML || '';
         modalBody.querySelectorAll('figcaption').forEach(function (fc) { fc.remove(); });
         if (post.pdfs && post.pdfs.length) {
           modalBody.insertAdjacentHTML('beforeend', buildPdfSectionHtml(post.pdfs));

@@ -3272,54 +3272,87 @@
         return decodeURIComponent(escape(atob(str.replace(/[\r\n]/g, ''))));
       }
 
-      // Embed the current appState into the HTML string and push to GitHub
+      // Embed the current appState into the HTML string and push to GitHub.
+      // Uses the Git Data API throughout (no 1 MB file-size limit).
       function publishToGitHub(state) {
         var cfg = getGhConfig();
         if (!cfg.token || !cfg.repo || !cfg.branch || !cfg.path) {
           return Promise.reject('GitHub settings not configured. Open admin → About → Publish Settings.');
         }
         var apiBase = 'https://api.github.com/repos/' + cfg.repo + '/contents/' + cfg.path;
-        var headers = {
-          'Authorization': 'token ' + (cfg.token || '').replace(/[^\x20-\x7E]/g, '').trim(),
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        };
+        var gitBase = 'https://api.github.com/repos/' + cfg.repo + '/git';
+        var authHdr = 'token ' + (cfg.token || '').replace(/[^\x20-\x7E]/g, '').trim();
+        var jsonHdrs = { 'Authorization': authHdr, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
 
-        // Step 1: fetch current file to get SHA
-        return fetch(apiBase + '?ref=' + cfg.branch, { headers: headers })
+        // Step 1: get the file's current blob SHA via Contents API (works for any size)
+        return fetch(apiBase + '?ref=' + cfg.branch, { headers: jsonHdrs })
           .then(function (r) {
             if (!r.ok) throw 'Could not read file from GitHub (status ' + r.status + '). Check repo/branch/path.';
             return r.json();
           })
           .then(function (fileData) {
-            var currentHtml = fromB64(fileData.content);
-            var sha         = fileData.sha;
-
-            // Replace (or insert) the #site-data script tag
-            var stateJson = JSON.stringify(state);
-            var newTag    = '<script id="site-data" type="application/json">' + stateJson + '<\/script>';
-            var tagRe     = /<script[^>]+id="site-data"[^>]*>[\s\S]*?<\/script>/;
-
-            var newHtml = tagRe.test(currentHtml)
-              ? currentHtml.replace(tagRe, newTag)
-              : currentHtml.replace('</body>', newTag + '\n</body>');
-
-            // Also patch <title> tag if a custom page title is set
-            if (state.pageTitle) {
-              newHtml = newHtml.replace(/<title>[^<]*<\/title>/, '<title>' + state.pageTitle.replace(/</g, '&lt;') + '</title>');
-            }
-
-            // Step 2: push updated file
-            return fetch(apiBase, {
-              method: 'PUT',
-              headers: headers,
-              body: JSON.stringify({
-                message: 'Publish site content via admin panel',
-                content: toB64(newHtml),
-                sha: sha,
-                branch: cfg.branch
+            var fileSha = fileData.sha;
+            // Step 2: fetch raw content via Git Blobs API (no size limit)
+            return fetch(gitBase + '/blobs/' + fileSha,
+              { headers: { 'Authorization': authHdr, 'Accept': 'application/vnd.github.raw' } })
+              .then(function (r) {
+                if (!r.ok) throw 'Could not fetch file content from GitHub.';
+                return r.text();
               })
-            });
+              .then(function (currentHtml) {
+                // Patch #site-data and optionally <title>
+                var stateJson = JSON.stringify(state);
+                var newTag    = '<script id="site-data" type="application/json">' + stateJson + '<\/script>';
+                var tagRe     = /<script[^>]+id="site-data"[^>]*>[\s\S]*?<\/script>/;
+                var newHtml   = tagRe.test(currentHtml)
+                  ? currentHtml.replace(tagRe, newTag)
+                  : currentHtml.replace('</body>', newTag + '\n</body>');
+                if (state.pageTitle) {
+                  newHtml = newHtml.replace(/<title>[^<]*<\/title>/, '<title>' + state.pageTitle.replace(/</g, '&lt;') + '</title>');
+                }
+                // Step 3: create a new blob with the updated HTML (no size limit)
+                return fetch(gitBase + '/blobs', {
+                  method: 'POST', headers: jsonHdrs,
+                  body: JSON.stringify({ content: newHtml, encoding: 'utf-8' })
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (blob) {
+                  // Step 4: get latest commit SHA on the branch
+                  return fetch(gitBase + '/refs/heads/' + cfg.branch, { headers: jsonHdrs })
+                    .then(function (r) { return r.json(); })
+                    .then(function (ref) {
+                      var commitSha = ref.object.sha;
+                      // Step 5: get the commit's tree SHA
+                      return fetch(gitBase + '/commits/' + commitSha, { headers: jsonHdrs })
+                        .then(function (r) { return r.json(); })
+                        .then(function (commit) {
+                          // Step 6: create a new tree pointing to the new blob
+                          return fetch(gitBase + '/trees', {
+                            method: 'POST', headers: jsonHdrs,
+                            body: JSON.stringify({ base_tree: commit.tree.sha,
+                              tree: [{ path: cfg.path, mode: '100644', type: 'blob', sha: blob.sha }] })
+                          })
+                          .then(function (r) { return r.json(); })
+                          .then(function (tree) {
+                            // Step 7: create a new commit
+                            return fetch(gitBase + '/commits', {
+                              method: 'POST', headers: jsonHdrs,
+                              body: JSON.stringify({ message: 'Publish site content via admin panel',
+                                tree: tree.sha, parents: [commitSha] })
+                            })
+                            .then(function (r) { return r.json(); })
+                            .then(function (newCommit) {
+                              // Step 8: advance the branch ref
+                              return fetch(gitBase + '/refs/heads/' + cfg.branch, {
+                                method: 'PATCH', headers: jsonHdrs,
+                                body: JSON.stringify({ sha: newCommit.sha })
+                              });
+                            });
+                          });
+                        });
+                    });
+                });
+              });
           })
           .then(function (r) {
             if (!r.ok) return r.json().then(function (j) { throw j.message || 'Push failed (status ' + r.status + ')'; });

@@ -2924,8 +2924,46 @@
         }
 
         if (file) {
+          var cfg = getGhConfig();
+          if (!cfg.token || !cfg.repo) {
+            setStatus('⚠ Configure GitHub settings (About → Publish Settings) before uploading files.');
+            return;
+          }
+          var addBtn = document.getElementById('pdf-add-btn');
+          addBtn.disabled = true;
+          setStatus('Uploading PDF to GitHub…');
+
+          var parts = cfg.repo.split('/');
+          var owner = parts[0], repoName = parts[1];
+          var pagesBase = (repoName === owner + '.github.io')
+            ? 'https://' + owner + '.github.io'
+            : 'https://' + owner + '.github.io/' + repoName;
+          var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          var apiUrl   = 'https://api.github.com/repos/' + cfg.repo + '/contents/pdfs/' + safeName;
+          var ghHeaders = {
+            'Authorization': 'token ' + cfg.token.replace(/[^\x20-\x7E]/g, '').trim(),
+            'Accept':        'application/vnd.github.v3+json',
+            'Content-Type':  'application/json'
+          };
+
           var reader = new FileReader();
-          reader.onload = function (ev) { addPdf(ev.target.result); };
+          reader.onload = function (ev) {
+            var b64 = ev.target.result.split(',')[1];
+            fetch(apiUrl + '?ref=' + (cfg.branch || 'main'), { headers: ghHeaders })
+              .then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (existing) {
+                var body = { message: 'Upload PDF: ' + safeName, content: b64, branch: cfg.branch || 'main' };
+                if (existing && existing.sha) body.sha = existing.sha;
+                return fetch(apiUrl, { method: 'PUT', headers: ghHeaders, body: JSON.stringify(body) });
+              })
+              .then(function (r) {
+                if (!r.ok) return r.json().then(function (j) { throw j.message || 'Upload failed (status ' + r.status + ')'; });
+                addPdf(pagesBase + '/pdfs/' + safeName);
+                setStatus('PDF uploaded. Remember to Publish so the link is live for visitors.');
+              })
+              .catch(function (err) { setStatus('⚠ PDF upload failed: ' + err); })
+              .finally(function () { addBtn.disabled = false; });
+          };
           reader.readAsDataURL(file);
         } else if (url) {
           addPdf(url);

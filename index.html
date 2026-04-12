@@ -7,20 +7,23 @@ layout: default
     <p class="site-subtitle">{{ site.description }}</p>
   </header>
 
+  <!-- Search bar -->
+  <div class="timeline-search">
+    <input type="search" id="timeline-search" class="timeline-search__input"
+           placeholder="Search posts..." aria-label="Search posts">
+  </div>
+
   <div class="timeline-wrap">
     <main class="timeline">
 
-      {% assign counter = 0 %}
       {% for post in site.posts %}
-        {% if counter % 2 == 0 %}
-          {% assign side = "left" %}
-        {% else %}
-          {% assign side = "right" %}
-        {% endif %}
-
-      <article class="post post--{{ side }}">
+      <article class="post post--{% cycle 'left', 'right' %}"
+               aria-expanded="false"
+               data-post-url="{{ post.url | relative_url }}"
+               data-title="{{ post.title | escape }}"
+               data-excerpt="{{ post.excerpt | strip_html | escape }}">
         <div class="post__connector"></div>
-        <a href="{{ post.url | relative_url }}" class="post__card">
+        <div class="post__card" tabindex="0" role="button" aria-label="{{ post.title | escape }}">
           <header class="post__header">
             <time class="post__date" datetime="{{ post.date | date: '%Y-%m-%d' }}">
               {{ post.date | date: "%B %-d, %Y" }}
@@ -28,11 +31,14 @@ layout: default
             <h2 class="post__title">{{ post.title }}</h2>
           </header>
           <p class="post__excerpt">{{ post.excerpt | strip_html }}</p>
-          <span class="post__read-more">Read more &rarr;</span>
-        </a>
+          <div class="post__body" aria-hidden="true">
+            <div class="post__body-inner">
+              {{ post.content }}
+            </div>
+          </div>
+          <button class="post__toggle" aria-label="Read more about {{ post.title | escape }}">Read more</button>
+        </div>
       </article>
-
-        {% assign counter = counter | plus: 1 %}
       {% endfor %}
 
     </main>

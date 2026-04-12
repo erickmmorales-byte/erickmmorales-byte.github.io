@@ -6,7 +6,6 @@
 
   var darkToggle = document.querySelector('.dark-toggle');
 
-  // Restore saved preference
   if (localStorage.getItem('dark-mode') === 'on') {
     document.body.classList.add('dark-mode');
     if (darkToggle) darkToggle.textContent = 'LIGHT';
@@ -28,8 +27,8 @@
 
   function openPanel() {
     document.body.classList.add('panel-open');
-    if (menuBtn)  menuBtn.setAttribute('aria-expanded', 'true');
-    if (panel)    panel.setAttribute('aria-hidden', 'false');
+    if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
+    if (panel)   panel.setAttribute('aria-hidden', 'false');
   }
 
   function closePanel() {
@@ -41,24 +40,14 @@
   if (menuBtn)  menuBtn.addEventListener('click', function () {
     document.body.classList.contains('panel-open') ? closePanel() : openPanel();
   });
-
   if (backdrop) backdrop.addEventListener('click', closePanel);
 
-  // Close panel on Escape
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closePanel();
-  });
-
-  // ── Active nav link (based on current URL) ────────────────
+  // ── Active nav link ───────────────────────────────────────
 
   var path = window.location.pathname.replace(/\/$/, '') || '/';
   document.querySelectorAll('.side-panel__nav a').forEach(function (a) {
     var href = (a.getAttribute('href') || '').replace(/\/$/, '') || '/';
-    if (href === path) {
-      a.classList.add('is-active');
-    } else {
-      a.classList.remove('is-active');
-    }
+    a.classList.toggle('is-active', href === path);
   });
 
   // ── Contact form (mailto fallback) ────────────────────────
@@ -77,7 +66,153 @@
     });
   }
 
-  // ── Image lightbox ────────────────────────────────────────
+  // ── Post modal ────────────────────────────────────────────
+
+  var modal = document.querySelector('.post-modal');
+  if (!modal) return;
+
+  var modalBackdrop  = modal.querySelector('.post-modal__backdrop');
+  var modalContainer = modal.querySelector('.post-modal__container');
+  var modalClose     = modal.querySelector('.post-modal__close');
+  var modalDate      = modal.querySelector('.post-modal__date');
+  var modalTitle     = modal.querySelector('.post-modal__title');
+  var modalBody      = modal.querySelector('.post-modal__body');
+  var timeline       = document.querySelector('.timeline');
+  var lastCardRect   = null;
+  var lastTouchTime  = 0;
+
+  function populateModal(article) {
+    var date      = article.querySelector('.post__date');
+    var title     = article.querySelector('.post__title');
+    var bodyInner = article.querySelector('.post__body-inner');
+
+    modalDate.textContent = date  ? date.textContent  : '';
+    modalDate.setAttribute('datetime', date ? (date.getAttribute('datetime') || '') : '');
+    modalTitle.textContent = title ? title.textContent : '';
+    modalBody.innerHTML    = bodyInner ? bodyInner.innerHTML : '';
+
+    // Strip figcaptions — captions show only in the lightbox
+    modalBody.querySelectorAll('figcaption').forEach(function (fc) { fc.remove(); });
+  }
+
+  function growModal(fromRect, toMargin) {
+    modalContainer.style.transition = 'none';
+    modalContainer.style.top    = fromRect.top    + 'px';
+    modalContainer.style.left   = fromRect.left   + 'px';
+    modalContainer.style.right  = (window.innerWidth  - fromRect.right)  + 'px';
+    modalContainer.style.bottom = (window.innerHeight - fromRect.bottom) + 'px';
+    modalContainer.style.overflow = 'hidden';
+
+    void modalContainer.offsetHeight; // force reflow
+
+    modalContainer.style.transition =
+      'top 0.4s ' + EASING + ', left 0.4s ' + EASING +
+      ', right 0.4s ' + EASING + ', bottom 0.4s ' + EASING;
+    modalContainer.style.top    = toMargin;
+    modalContainer.style.left   = toMargin;
+    modalContainer.style.right  = toMargin;
+    modalContainer.style.bottom = toMargin;
+
+    modalContainer.addEventListener('transitionend', function handler(e) {
+      if (e.propertyName !== 'top') return;
+      modalContainer.removeEventListener('transitionend', handler);
+      modalContainer.style.overflowY = 'auto';
+      modalClose.focus();
+    });
+  }
+
+  function openModal(article) {
+    populateModal(article);
+    var card = article.querySelector('.post__card');
+    lastCardRect = card.getBoundingClientRect();
+    var margin = window.innerWidth <= 700 ? '0.75rem' : '2rem';
+
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    growModal(lastCardRect, margin);
+
+    // Update address bar to the post's own URL (browser back closes modal)
+    var postUrl = article.getAttribute('data-post-url');
+    if (postUrl) history.pushState({ modal: true }, '', postUrl);
+  }
+
+  // Shared close animation — used by both button close and popstate close
+  function animateModalClosed() {
+    modalContainer.style.overflowY = 'hidden';
+    if (lastCardRect) {
+      var r = lastCardRect;
+      modalContainer.style.transition =
+        'top 0.35s ' + EASING + ', left 0.35s ' + EASING +
+        ', right 0.35s ' + EASING + ', bottom 0.35s ' + EASING;
+      modalContainer.style.top    = r.top    + 'px';
+      modalContainer.style.left   = r.left   + 'px';
+      modalContainer.style.right  = (window.innerWidth  - r.right)  + 'px';
+      modalContainer.style.bottom = (window.innerHeight - r.bottom) + 'px';
+    }
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+
+    modal.addEventListener('transitionend', function handler(e) {
+      if (e.propertyName !== 'opacity') return;
+      modal.removeEventListener('transitionend', handler);
+      modalContainer.style.cssText = '';
+    });
+  }
+
+  function closeModal() {
+    animateModalClosed();
+    // Navigate back so the URL restores to / (triggers popstate, which is a no-op
+    // since is-open is already removed above)
+    if (history.state && history.state.modal) history.back();
+  }
+
+  // Browser back button while modal is open → close it
+  window.addEventListener('popstate', function () {
+    if (modal.classList.contains('is-open')) animateModalClosed();
+  });
+
+  modalClose.addEventListener('click', closeModal);
+  modalBackdrop.addEventListener('click', closeModal);
+
+  modalContainer.addEventListener('dblclick', function () {
+    if (modal.classList.contains('is-open')) closeModal();
+  });
+
+  modalContainer.addEventListener('touchend', function () {
+    var now = Date.now();
+    if (now - lastTouchTime < 320 && modal.classList.contains('is-open')) closeModal();
+    lastTouchTime = now;
+  }, { passive: true });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (modal.classList.contains('is-open')) closeModal();
+    else closePanel();
+  });
+
+  // ── Timeline card click → open modal ─────────────────────
+
+  if (timeline) {
+    timeline.addEventListener('click', function (e) {
+      var card = e.target.closest('.post__card');
+      if (!card) return;
+      var article = card.closest('.post');
+      if (article) openModal(article);
+    });
+
+    timeline.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      var card = e.target.closest('.post__card');
+      if (!card) return;
+      e.preventDefault();
+      var article = card.closest('.post');
+      if (article) openModal(article);
+    });
+  }
+
+  // ── Image lightbox (opened from inside the modal) ─────────
 
   var lightbox = document.querySelector('.img-lightbox');
   if (!lightbox) return;
@@ -158,7 +293,6 @@
   lightboxBackdrop.addEventListener('click', closeLightbox);
   lightboxContainer.addEventListener('dblclick', closeLightbox);
 
-  // Double-tap to close on mobile
   var lastTap = 0;
   lightboxContainer.addEventListener('touchend', function (e) {
     var now = Date.now();
@@ -166,14 +300,24 @@
     lastTap = now;
   });
 
-  // Open lightbox when any .post-img figure is clicked
-  document.addEventListener('click', function (e) {
+  modal.addEventListener('click', function (e) {
     var figure = e.target.closest('.post-img');
     if (figure) openLightbox(figure);
   });
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && lightbox.classList.contains('is-open')) closeLightbox();
-  });
+  // ── Search / filter ───────────────────────────────────────
+
+  var searchInput = document.getElementById('timeline-search');
+  if (searchInput && timeline) {
+    searchInput.addEventListener('input', function () {
+      var query = searchInput.value.toLowerCase().trim();
+      timeline.querySelectorAll('.post').forEach(function (article) {
+        var title   = (article.getAttribute('data-title')   || '').toLowerCase();
+        var excerpt = (article.getAttribute('data-excerpt') || '').toLowerCase();
+        var match = !query || title.includes(query) || excerpt.includes(query);
+        article.style.display = match ? '' : 'none';
+      });
+    });
+  }
 
 }());

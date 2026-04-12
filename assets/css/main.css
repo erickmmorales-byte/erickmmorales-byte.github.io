@@ -1349,3 +1349,31 @@ a.post__card {
   text-decoration: none;
   color: inherit;
 }
+
+/* ── Search bar ──────────────────────────────────────────── */
+.timeline-search {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1.5rem 2rem;
+}
+
+.timeline-search__input {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--color-text);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 3px;
+  padding: 0.65rem 0.85rem;
+  transition: border-color 0.15s ease;
+}
+
+.timeline-search__input::placeholder {
+  color: var(--color-muted);
+}
+
+.timeline-search__input:focus {
+  outline: none;
+  border-color: #aaa;
+}

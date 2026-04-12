@@ -37,6 +37,19 @@
   <!-- Page content -->
   {{ content }}
 
+  <!-- Post modal -->
+  <div class="post-modal" aria-hidden="true">
+    <div class="post-modal__backdrop"></div>
+    <div class="post-modal__container" role="dialog" aria-modal="true" aria-label="Post">
+      <button class="post-modal__close" aria-label="Close">&times;</button>
+      <div class="post-modal__scroll">
+        <time class="post-modal__date"></time>
+        <h2 class="post-modal__title"></h2>
+        <div class="post-modal__body"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Image lightbox -->
   <div class="img-lightbox" aria-hidden="true">
     <div class="img-lightbox__backdrop"></div>

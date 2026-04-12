@@ -1,0 +1,30 @@
+---
+layout: default
+---
+<div class="page is-active">
+  <header class="site-header">
+    <h1 class="site-title">
+      <a href="{{ '/' | relative_url }}" class="site-title__link">{{ site.title }}</a>
+    </h1>
+    <p class="site-subtitle">{{ site.description }}</p>
+  </header>
+
+  <div class="post-page">
+    <div class="post-modal__scroll">
+      <time class="post-modal__date" datetime="{{ page.date | date: '%Y-%m-%d' }}">
+        {{ page.date | date: "%B %-d, %Y" }}
+      </time>
+      <h1 class="post-modal__title">{{ page.title }}</h1>
+      <div class="post-modal__body">
+        {{ content }}
+      </div>
+      <p class="post-page__back">
+        <a href="{{ '/' | relative_url }}">&larr; All posts</a>
+      </p>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <p>{{ site.footer_text }}</p>
+  </footer>
+</div>

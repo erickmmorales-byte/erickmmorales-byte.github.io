@@ -1,0 +1,55 @@
+---
+layout: default
+title: About
+permalink: /about/
+---
+<div class="page is-active">
+  <header class="site-header">
+    <h1 class="site-title">About</h1>
+  </header>
+
+  <div class="about">
+
+    <section class="about__section">
+      <h2 class="about__section-title">Bio</h2>
+      <div class="about__bio">
+        <p>Hi, I'm Erick. I write about the things I find interesting — which tends to include books, slow mornings, gardening, and the gap between how we think we work and how we actually do.</p>
+        <p>This blog is a place for longer thoughts that don't fit anywhere else. I publish when something is ready, not on a schedule.</p>
+      </div>
+    </section>
+
+    <section class="about__section">
+      <h2 class="about__section-title">Contact</h2>
+      <ul class="about__contact-list">
+        <li>Email: <a href="mailto:erickmmorales@gmail.com">erickmmorales@gmail.com</a></li>
+        <li>Twitter / X: <a href="#">@yourhandle</a></li>
+        <li>LinkedIn: <a href="https://www.linkedin.com/in/erickmmorales/">erickmmorales</a></li>
+        <li>GitHub: <a href="#">github.com/yourhandle</a></li>
+      </ul>
+    </section>
+
+    <section class="about__section">
+      <h2 class="about__section-title">Send a message</h2>
+      <form class="contact-form" id="contact-form">
+        <div class="form-field">
+          <label for="cf-name">Name</label>
+          <input type="text" id="cf-name" name="name" placeholder="Your name" required>
+        </div>
+        <div class="form-field">
+          <label for="cf-email">Email</label>
+          <input type="email" id="cf-email" name="email" placeholder="your@email.com" required>
+        </div>
+        <div class="form-field">
+          <label for="cf-message">Message</label>
+          <textarea id="cf-message" name="message" placeholder="What's on your mind?" required></textarea>
+        </div>
+        <button type="submit" class="form-submit">Send</button>
+      </form>
+    </section>
+
+  </div>
+
+  <footer class="site-footer">
+    <p>{{ site.footer_text }}</p>
+  </footer>
+</div>

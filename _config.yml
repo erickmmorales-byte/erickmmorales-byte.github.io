@@ -1,0 +1,27 @@
+title: "Your Best Friend"
+description: "Notes on things that matter"
+author: "Erick Morales"
+url: "https://erickmmorales.com"
+baseurl: ""
+
+# Footer text
+footer_text: "© 2026 &nbsp;&middot;&nbsp; Written slowly, published when ready"
+
+# Permalink structure for posts
+permalink: /posts/:title/
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# Exclude non-site files from the build
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - "*.gemspec"
+  - vendor/

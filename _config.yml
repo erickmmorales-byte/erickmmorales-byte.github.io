@@ -1,11 +1,11 @@
-title: "Your Best Friend"
-description: "Notes on things that matter"
+title: "Erick Morales"
+description: "Notes on technology, public administration, and urban systems"
 author: "Erick Morales"
 url: "https://erickmmorales.com"
 baseurl: ""
 
 # Footer text
-footer_text: "© 2026 &nbsp;&middot;&nbsp; Written slowly, published when ready"
+footer_text: "© 2026 &nbsp;&middot;&nbsp; Written by Erick"
 
 # Permalink structure for posts
 permalink: /posts/:title/
